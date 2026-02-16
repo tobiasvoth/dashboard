@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NEXT deskly</title>
+
+<link rel="stylesheet"  href="{{ url_for('static', filename='styles.css') }}">
+
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='Logo_farbe.png') }}">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+<body>
+
+
+<div class="global">
+
+
+
+
+
+	<div class="container">
+
+
+
+		<div id="iframe">
+			<iframe
+				id="deskly"
+				
+				// URL muss angepasst werden je nach dem welcher Plan genutzt werden soll (Kioskmodus bei deskly aufrufen und URL einfügen)
+				src="https://noz-mhn.desk.ly/de/kiosk-mode/map/db675aec-55d8-42b4-b961-e861e5668a83?token=e3fefacaea3fa029582d18b4f0809c5dc44366988d2a38e0a9bbbb8e6c46c679f3478b684c1061f2b3cc34141e8bb010f0bd"
+				title="deskly.de">
+		
+			</iframe>
+
+
+		</div>	
+
+
+
+	</div>	
+
+
+
+
+<div class = "footer">
+	<img src ="{{ url_for('static', filename='images/NEXT_weiß.png') }}" alt="Logo" id = "logo">
+</div>	
+
+
+</div>	
+
+
+
+</body>
+</html>

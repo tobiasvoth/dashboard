@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NEXT Dashboard</title>
+<link href="https://fonts.cdnfonts.com/css/source-sans-pro" rel="stylesheet">
+<link rel="stylesheet" href="styles_absence.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles_absence.css') }}">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+<body>
+
+
+<div class="global">
+	
+
+
+	<div id="head">
+		<div id="space"></div>
+		<div id="Osnabrueck" class="city-box">
+			<div id="icon">
+				
+				<img src="{{ url_for('static', filename='images/niedersachsen.png') }}" alt="icon" width="100%" id="icon_wetter" class = "wettericon_Osnabrueck">
+
+			</div>
+			<div id="temp" class="temp_Osnabrueck"></div>
+			<div id="city">Osnabrück</div>
+
+		</div>
+		<div id="Flensburg">
+			<div id="icon">
+				<img src="{{ url_for('static', filename='images/schlehol.png') }}" alt="icon" width="100%" id="icon_wetter" class = "wettericon_Flensburg">
+
+
+			</div>
+			<div id="temp"class="temp_Flensburg"></div>
+			<div id="city">Flensburg</div>
+
+
+	
+		</div>
+		
+		<div id = "head1">
+			<div id="clock"></div>
+			<div id="date"></div>
+		</div>
+		<div id="Neubrandenburg">
+		
+			<div id="icon">
+				<img src="{{ url_for('static', filename='images/meckpom.png') }}" alt="icon" width="100%" id="icon_wetter" class = "wettericon_Neubrandenburg">
+
+
+			</div>
+			<div id="temp" class="temp_Neubrandenburg"></div>
+			<div id="city">Neubrandenburg</div>
+
+
+		</div>
+		<div id="Hamburg">
+			<div id="icon">
+				<img src="{{ url_for('static', filename='images/hamburg.png') }}" alt="icon" width="100%" id="icon_wetter" class = "wettericon_Hamburg">
+
+
+			</div>
+			<div id="temp" class="temp_Hamburg"></div>
+			<div id="city">Hamburg</div>
+	
+	
+		</div>
+		<div id="space"></div>
+
+	</div>
+
+
+	<div id = "top">
+	<div id = "line-container">
+		<div class="circle"></div>
+    		<div class="dashed-line"></div>
+    		<div class="circle"></div>
+	</div>
+	</div>
+
+
+
+
+
+
+	<div class="container">
+
+		
+		<div id="iframe">
+			<p class = "überschrift">to:gether</p>
+			<div id = "iframe1">
+				<img src="http://127.0.0.1:5500/static/images/load.gif" class="loader" id="loader" alt="Lädt...">
+				<iframe id ="together" src= "http://127.0.0.1:5500/"></iframe>
+			</div>
+		</div>
+
+
+
+
+
+
+	</div>
+		
+	
+		<div class = "footer">
+			
+			<img src ="{{ url_for('static', filename='images/NEXT_weiß.png') }}" alt="Logo" id = "logo">
+		</div>
+	
+
+
+</div>
+
+
+
+
+
+
+<script>
+	function updateClock(){
+		const now = new Date();
+		const hours = now.getHours().toString().padStart(2, '0');
+		const minutes = now.getMinutes().toString().padStart(2, '0');
+		document.getElementById('clock').innerText = `${hours}:${minutes}`;
+	
+
+	}
+	
+	setInterval(updateClock, 1000);
+	updateClock();
+
+
+
+	 function aktuellesDatumAnzeigen() {
+            const heute = new Date();
+            const options = { day: '2-digit', month: 'long', year: 'numeric' };
+            const datumString = heute.toLocaleDateString('de-DE', options);
+            
+            document.getElementById("date").innerText = datumString;
+        	}
+
+        // Funktion aufrufen
+        aktuellesDatumAnzeigen();
+
+
+
+	function autoScrollIframe() {
+    const iframe = document.getElementById('together');
+    const iframeDocument = iframe.contentWindow.document;
+
+    let scrollPosition = 0; // Anfangs-Scroll-Position
+    let direction = 1; // 1 bedeutet nach unten scrollen, -1 nach oben scrollen
+    const scrollStep = 0.5; // Geschwindigkeit des Scrollens (in Pixeln)
+    const maxScrollPosition = iframeDocument.body.scrollHeight - iframe.clientHeight; // Maximale Scrollhöhe
+
+    // Funktion, die das Scrollen ausführt
+    function scroll() {
+        // Scrollen nach unten oder oben
+        scrollPosition += scrollStep * direction;
+
+        // Wenn das Ende des Inhalts erreicht ist, in die entgegengesetzte Richtung scrollen
+        if (scrollPosition >= maxScrollPosition || scrollPosition <= 0) {
+            direction *= -1; // Richtung ändern
+            // Optional: eine kleine Pause, um den Scroll-Effekt flüssiger zu machen
+            setTimeout(scroll, 1000 * 10); // Warte 1 Sekunde, bevor die Richtung geändert wird
+            return; // Verlasse die aktuelle Iteration und warte auf die nächste
+        }
+
+        // Scrollen
+        iframe.contentWindow.scrollTo(0, scrollPosition);
+
+        // Warten auf die nächste Animation
+        requestAnimationFrame(scroll);
+    }
+
+    // Starte den Scroll-Prozess
+    requestAnimationFrame(scroll);
+}
+ const iframe = document.getElementById("together");
+ const loader = document.getElementById("loader");
+
+
+
+iframe.onload = function(){
+	loader.style.display = "none";
+	iframe.style.display = "block";
+
+
+
+
+    autoScrollIframe();
+};
+
+
+
+	
+
+async function fetchWeather() {
+           
+            const url = "http://127.0.0.1:5500/weather";
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error("Fehler beim Abrufen der Daten");
+                }
+                const data = await response.json();
+		console.log(data);
+
+                // Wetter-Daten extrahieren
+                const temp = Math.round(data["Osnabrueck"][0]);
+                console.log(temp);
+                const icon = data["Osnabrueck"][1];
+		console.log(icon);
+                const iconUrl = `http://127.0.0.1:5500/static/images/${icon}.png`;
+
+                // Daten in das Div einfügen
+                document.querySelector(".temp_Osnabrueck").textContent = temp + "°C";
+		document.querySelector(".wettericon_Osnabrueck").src = iconUrl;
+
+
+
+
+
+
+
+		const temp_FL = Math.round(data["Flensburg"][0]);
+                console.log(temp_FL);
+                const icon_FL = data["Flensburg"][1];
+		console.log(icon_FL);
+                const iconUrl_FL = `http://127.0.0.1:5500/static/images/${icon_FL}.png`;
+
+                // Daten in das Div einfügen
+                document.querySelector(".temp_Flensburg").textContent = temp_FL + "°C";
+		document.querySelector(".wettericon_Flensburg").src = iconUrl_FL;
+
+
+
+
+		const temp_NB = Math.round(data["Neubrandenburg"][0]);
+                console.log(temp_NB);
+                const icon_NB = data["Neubrandenburg"][1];
+		console.log(icon_NB);
+                const iconUrl_NB = `http://127.0.0.1:5500/static/images/${icon_NB}.png`;
+
+                // Daten in das Div einfügen
+                document.querySelector(".temp_Neubrandenburg").textContent = temp_NB + "°C";
+		document.querySelector(".wettericon_Neubrandenburg").src = iconUrl_NB;
+
+
+
+
+
+
+		const temp_HH = Math.round(data["Hamburg"][0]);
+                console.log(temp_HH);
+                const icon_HH = data["Hamburg"][1];
+		console.log(icon_HH);
+                const iconUrl_HH = `http://127.0.0.1:5500/static/images/${icon_HH}.png`;
+
+                // Daten in das Div einfügen
+                document.querySelector(".temp_Hamburg").textContent = temp_HH + "°C";
+		document.querySelector(".wettericon_Hamburg").src = iconUrl_HH;
+
+
+            } catch (error) {
+                document.getElementsById("temp_Osnabrueck").innerHTML = "Fehler beim Laden der Daten";
+                console.error("Fehler:", error);
+            }
+        }
+
+        fetchWeather(); // API beim Laden der Seite abrufen
+
+	setInterval(fetchWeather, 60000 * 15);
+
+
+	//Together Irame wird alle 30 in aktualisiert
+ function reloadIframe() {
+            const iframe = document.getElementById("together");
+
+            // Hier wird der src-Link neu geladen, um das Iframe zu aktualisieren
+            iframe.src = iframe.src;
+        }
+
+        // Alle 30 Minuten 
+        setInterval(reloadIframe, 60000 * 30);
+
+	// Mousemove wird durchgeführt, damit Browser nicht inaktiv wird	
+	setInterval(() => {
+		let evt = new MouseEvent("mousemove", { bubbles: true, cancelable: true});
+		document.dispatchEvent(evt);
+		},30000);
+
+	//gesamte Seite wird neu geladen
+	setInterval(() => {
+		location.reload();
+		},60000 * 45);
+
+
+</script>
+
+
+
+
+
+
+
+
+
+</body>
+</html>

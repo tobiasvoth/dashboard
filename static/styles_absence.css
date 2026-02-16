@@ -1,0 +1,337 @@
+
+
+
+
+
+.global {
+	display: flex;
+	flex-direction: column;
+	position: fixed;
+  	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	
+
+
+}
+
+
+#head{
+	display: flex;
+	align-items: strech;
+	flex-wrap: wrap;
+	width: 100vw;
+	
+}
+
+
+#space{
+width: 5vw;
+
+
+}
+
+#Osnabrueck{
+	flex: 1;
+	background-color: none;
+	height: 100%;
+	overflow: hidden;
+}
+
+
+
+#icon{
+flex-grow: 1;
+background-color:  white;
+height:50%;
+display: flex;
+justify-content: center;
+align-items: center;
+overflow: hidden;
+
+
+}
+
+
+#icon_wetter{
+
+height:5vh;
+width: 5vh;
+min-height: 15px;
+min-width: 15px;
+
+}
+
+
+
+#temp{
+flex-grow: 1;
+height:25%;
+display: flex;
+justify-content: center;
+align-items: center;
+
+
+	font-family: Source Sans Pro;
+font-size: max(5vh, 15px);
+font-weight: 200;
+width: 100%;
+
+}
+
+#city{
+flex:1;
+background-color:  white;
+height:25%;
+
+display: flex;
+justify-content: center;
+align-items: center;
+
+
+	font-family: Source Sans Pro;
+	font-size: max(1.9vh, 9px);
+}
+
+
+
+
+
+
+
+
+
+
+
+#Flensburg{
+flex: 1;
+background-color: none;
+height: 100%;
+}
+
+
+#Neubrandenburg{
+flex: 1;
+background-color: none;
+height: 100%;
+}
+
+
+#Hamburg{
+flex: 1;
+background-color: none;
+height: 100%;
+}
+
+
+#head1 {
+	flex-grow: 1;
+}
+
+
+
+
+#clock{
+
+	font-size: max(10vh, 50px);
+	font-weight: bold;
+	font-family: Source Sans Pro;
+	color: #00a7e7;
+	text-align: center;
+	margin: 0 auto;
+	height: max(10vh, 50px);
+	
+}
+
+#date{
+	font-size: max(3vh, 15px);
+	font-weight: 500;
+	font-family: Source Sans Pro, sans-serif;
+	color: #333;
+	text-align: center;
+	margin: 0 auto;
+	height: max(4vh, 15px);
+
+}
+
+
+
+
+
+#top{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100vw;
+
+
+
+}
+
+#line-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 90vw;
+
+}
+
+.dashed-line {
+    	width: 100%;
+	height: 0.8vh;
+	background-color: #666666;
+	margin: 1vw;
+	border-radius: 50px;
+}
+
+.circle {
+    width: 2vh;
+    height: 2vh;
+    border: 0.5vh solid #666666; /* Umrandung */
+    border-radius: 50%; /* Macht den Kreis rund */
+    background: none; /* Kein Füllbereich */
+}
+
+
+
+
+
+
+.container {
+	margin-top: 1vh;
+	padding: 1vh 5vw;
+	display: flex;
+	flex-direction: row;
+	height: 90vh;
+	justify-content: space-between;
+	gap: 1vw;
+	
+	
+	
+	
+}
+#iframe{
+	
+	border: none;
+	flex: 3;
+	overflow: hidden;
+	
+	
+	
+	
+
+	
+}
+#iframe1{
+
+	
+	flex: 3;
+	
+	height: calc(100% - 5vh);
+	border: 0.5vh solid #EBEBEB; 
+	border-radius: 1vh;
+	background-color: #EBEBEB;
+	overflow: hidden;
+	display: flex;
+	justify-content: center;
+	align-items: center; /* Falls Inhalt vertikal mittig sein soll */
+	position: relative;
+}
+
+
+
+
+
+.loader{
+ 	
+	position: absolute;
+    	top: 50%;
+   	left: 50%;
+  	transform: translate(-50%, -50%);
+   	width: 10vh;
+   	height: 10vh;
+   	object-fit: contain;
+    	z-index: 10;
+	
+}
+
+
+
+#together{
+	
+	
+	position: relativ;
+	top:0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
+	
+	
+	
+	
+}
+
+
+
+#absence {
+	background-color: white;
+	flex: 1;
+		
+	
+	
+}
+#abwesend{
+	background-color: #EBEBEB;
+	flex: 1;
+	flex-grow: 1;
+	height: calc(100% - 5vh);
+	border: 0.5vh solid #EBEBEB; 
+	border-radius: 1vh;
+	
+}
+
+
+
+
+
+
+.überschrift {
+	font-family: Source Sans Pro;
+	font-weight: 100;
+
+	text-align: center;
+	font-size: max(2vh, 10px);
+	margin: 0;
+}
+
+
+
+
+
+.footer {
+
+	background: linear-gradient(to right, #00a9e7, #19B1E9);
+	height: 10vh;
+	width: 100vw;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	
+	text-align: center;
+	
+	
+}
+
+#logo{
+	height: 90%;
+	
+
+}
+
+
+
+
+}

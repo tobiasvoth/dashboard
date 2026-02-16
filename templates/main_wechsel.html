@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Webseiten-Rotator</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="viewer" src=""></iframe>
+
+  <script>
+    const sites = [
+    "http://127.0.0.1:5500/news",
+    "http://127.0.0.1:5500/deskly",
+    "http://127.0.0.1:5500/deskly2",
+      
+    ];
+    let current = 0;
+    const interval = 15 *60 * 1000; // 15 Minuten in Millisekunden
+
+    function loadNextSite() {
+      document.getElementById('viewer').src = sites[current];
+      current = (current + 1) % sites.length;
+    }
+
+    loadNextSite(); // Erste Seite laden
+    setInterval(loadNextSite, interval); // Alle 15 Minuten wechseln
+    
+    setInterval(() => {
+		let evt = new MouseEvent("mousemove", { bubbles: true, cancelable: true});
+		document.dispatchEvent(evt);
+		},30000);
+//Läd die gesamte Webseite neu, damit das Skript nicht inaktiv wird
+	setInterval(() => {
+		location.reload();
+		},60000 * 45);
+
+  </script>
+</body>
+</html>

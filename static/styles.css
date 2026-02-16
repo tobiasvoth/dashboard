@@ -1,0 +1,82 @@
+
+
+
+
+
+.global {
+
+
+	
+  	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	position: fixed;
+	
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.container {
+	
+	height: 90vh;
+	
+	
+	
+	
+}
+#iframe{
+	
+	height: 100%;
+	
+	
+	
+	
+
+	
+}
+#deskly {
+	border: none;
+	height: 100%;
+	width: 100%;
+	
+}
+.footer {
+
+	background: linear-gradient(to right, #0092d7, #00a9e7);
+	height: 10vh;
+	width: 100vw;
+	margin-top: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	
+	
+}
+
+#logo{
+	height: 90%;
+	padding: 1%;
+	
+
+	
+}
+
+
+
+
+
+
+
+
