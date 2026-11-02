@@ -1,20 +1,24 @@
 #!/bin/bash
 
+# Keine Leerzeichen um das '='
+SCRIPT_DIR="/root/my-applications/dashboard"
+
+# Display & X-Server-Berechtigung setzen
 export DISPLAY=:0
-day_of_week=$(date +%u) 
+export XAUTHORITY="/root/.Xauthority"
 
-if [ "$day_of_week" -eq 6 ] || [ "$day_of_week" -eq 7 ]; then
-    echo "Es ist Wochenende (Samstag oder Sonntag). Der PC wird jetzt heruntergefahren."
-    poweroff
-else
-    echo "Heute ist kein Wochenende. Der PC bleibt an."
-fi
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Python direkt aus der virtuellen Umgebung im Hintergrund starten
+"$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/toogether.py" &
 
-source SCRIPT_DIR/mouse.sh&
-
-source SCRIPT_DIR/venv/bin/activate 
+# Wartezeit, damit der Webserver hochfahren kann
 sleep 2
-python SCRIPT_DIR/toogether.py&
 
-google-chrome --disable-background-timer-throttling --disable-renderer-backgrounding --autoplay-policy=no-user-gesture-required --start-fullscreen "http://127.0.0.1:5500/news" --new-window&
+# Chrome starten (inkl. --no-sandbox für Root-Betrieb)
+google-chrome \
+  --no-sandbox \
+  --disable-background-timer-throttling \
+  --disable-renderer-backgrounding \
+  --autoplay-policy=no-user-gesture-required \
+  --start-fullscreen \
+  --new-window \
+  "http://127.0.0.1:5500/news" &

@@ -26,6 +26,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
 
 # Logging konfigurieren
@@ -155,10 +156,153 @@ class ToogetherScraper:
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--blink-settings=imagesEnabled=true")
 
+        # Hintergrund-Drosselung auf schwachen Geräten verhindern
+        chrome_options.add_argument("--disable-background-timer-throttling")
+        chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+        chrome_options.add_argument("--disable-renderer-backgrounding")
+
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.set_page_load_timeout(35)
+        driver.set_page_load_timeout(90)
+        driver.set_script_timeout(60)
         return driver
+
+    def _wait_for_document_ready(self, driver, timeout=60):
+        """Wartet, bis das Dokument vollständig durch den Browser initialisiert wurde."""
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            try:
+                state = driver.execute_script("return document.readyState")
+                if state == "complete":
+                    return True
+            except Exception:
+                pass
+            time.sleep(0.5)
+        logger.warning(f"Timeout beim Warten auf document.readyState == 'complete' ({timeout}s). Fahre dennoch fort...")
+        return False
+
+    def _wait_for_login_or_content(self, driver, timeout=60):
+        """
+        Wartet auf langsamen Geräten geduldig, bis entweder die Login-Oberfläche
+        oder der eingeloggte Hauptinhalt (main.content) im DOM auftaucht.
+        Verhindert voreiliges Überspringen des Logins.
+        """
+        login_selector = "cat-input[name='username'], cat-input[formcontrolname='username'], input[name='username'], input[type='email']"
+        content_selector = "main.content, .cui-button.cui-focus-in.nav-active"
+
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            # 1. Prüfen, ob bereits eingeloggt / Content vorhanden
+            content_elements = driver.find_elements(By.CSS_SELECTOR, content_selector)
+            if content_elements:
+                return ("content", content_elements[0])
+
+            # 2. Prüfen, ob Login-Formular erschienen ist
+            login_elements = driver.find_elements(By.CSS_SELECTOR, login_selector)
+            if login_elements:
+                return ("login", login_elements[0])
+
+            time.sleep(1)
+
+        return ("unknown", None)
+
+    def _find_interactive_input(self, driver, selector, timeout=45):
+        """
+        Findet das eigentliche Eingabefeld (<input>), auch wenn es in einem
+        Web Component Shadow-DOM (z. B. cat-input) liegt, und wartet, bis es bereit ist.
+        """
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            try:
+                elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                for el in elements:
+                    # Fall A: In Shadow-DOM suchen
+                    try:
+                        sr = el.shadow_root
+                        if sr:
+                            inner = sr.find_element(By.CSS_SELECTOR, "input")
+                            if inner and inner.is_enabled():
+                                return inner
+                    except Exception:
+                        pass
+
+                    # Fall B: Direktes <input> Element
+                    if el.tag_name.lower() == "input" and el.is_enabled():
+                        return el
+
+                    # Fall C: Normal verschachteltes <input>
+                    try:
+                        inner = el.find_element(By.CSS_SELECTOR, "input")
+                        if inner and inner.is_enabled():
+                            return inner
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            time.sleep(0.5)
+
+        raise TimeoutException(f"Eingabefeld für '{selector}' wurde nicht rechtzeitig interaktiv.")
+
+    def _safe_type(self, driver, input_el, text):
+        """Tippt Text ein und feuert input/change Events für Angular Formulare."""
+        try:
+            input_el.click()
+        except Exception:
+            pass
+        input_el.clear()
+        input_el.send_keys(Keys.CONTROL + "a")
+        input_el.send_keys(Keys.BACKSPACE)
+        input_el.send_keys(text)
+        try:
+            driver.execute_script("""
+                arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+                arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+            """, input_el)
+        except Exception:
+            pass
+
+    def _submit_login(self, driver, p_input, timeout=20):
+        """Klickt den Login-Button (auch im Shadow DOM) oder sendet Enter."""
+        button_selector = "cat-button[name='login'], cat-button[data-test='button-submit'], button[type='submit'], cat-button"
+        end_time = time.time() + timeout
+        clicked = False
+
+        while time.time() < end_time:
+            try:
+                buttons = driver.find_elements(By.CSS_SELECTOR, button_selector)
+                for btn in buttons:
+                    target = btn
+                    try:
+                        sr = btn.shadow_root
+                        if sr:
+                            inner_btn = sr.find_element(By.CSS_SELECTOR, "button")
+                            if inner_btn:
+                                target = inner_btn
+                    except Exception:
+                        pass
+
+                    try:
+                        if target.is_enabled():
+                            time.sleep(0.3)
+                            target.click()
+                            clicked = True
+                            break
+                    except Exception:
+                        try:
+                            driver.execute_script("arguments[0].click();", target)
+                            clicked = True
+                            break
+                        except Exception:
+                            pass
+                if clicked:
+                    break
+            except Exception:
+                pass
+            time.sleep(0.5)
+
+        if not clicked:
+            logger.info("Login-Button nicht klickbar gefunden, sende ENTER auf Passwort-Feld...")
+            p_input.send_keys(Keys.RETURN)
 
     def _perform_scrape(self):
         driver = None
@@ -169,66 +313,74 @@ class ToogetherScraper:
             driver = self._create_driver()
             driver.get(TARGET_URL)
 
-            # Prüfe, ob Anmeldefenster erscheint
-            try:
-                username_el = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((
-                        By.CSS_SELECTOR,
-                        "cat-input[name='username'], cat-input[formcontrolname='username'], input[name='username']"
-                    ))
-                )
-                logger.info("Login-Formular erkannt. Führe automatische Anmeldung durch...")
+            # 1. Warten bis Dokument im Browser geladen ist
+            self._wait_for_document_ready(driver, timeout=60)
 
-                # Username eingeben (unterstützt Shadow DOM falls cat-input)
-                try:
-                    u_input = username_el.shadow_root.find_element(By.CSS_SELECTOR, "input")
-                except Exception:
-                    u_input = username_el
-                u_input.clear()
-                u_input.send_keys(LOGIN_USER)
+            # 2. Prüfen, ob Login nötig ist oder wir bereits angemeldet sind
+            page_state, detected_el = self._wait_for_login_or_content(driver, timeout=60)
+
+            if page_state == "login":
+                logger.info("Login-Oberfläche erkannt. Warte auf vollständiges Laden der Eingabefelder...")
+
+                # Username eingeben
+                u_input = self._find_interactive_input(
+                    driver,
+                    "cat-input[name='username'], cat-input[formcontrolname='username'], input[name='username']",
+                    timeout=45
+                )
+                self._safe_type(driver, u_input, LOGIN_USER)
 
                 # Passwort eingeben
-                password_el = driver.find_element(
-                    By.CSS_SELECTOR,
-                    "cat-input[name='password'], cat-input[formcontrolname='password'], input[name='password']"
+                p_input = self._find_interactive_input(
+                    driver,
+                    "cat-input[name='password'], cat-input[formcontrolname='password'], input[name='password']",
+                    timeout=45
                 )
-                try:
-                    p_input = password_el.shadow_root.find_element(By.CSS_SELECTOR, "input")
-                except Exception:
-                    p_input = password_el
-                p_input.clear()
-                p_input.send_keys(LOGIN_PASS)
+                self._safe_type(driver, p_input, LOGIN_PASS)
 
-                # Login-Button klicken oder Enter drücken
-                try:
-                    btn = driver.find_element(
-                        By.CSS_SELECTOR,
-                        "cat-button[name='login'], cat-button[data-test='button-submit'], button[type='submit']"
-                    )
-                    btn.click()
-                except Exception:
-                    p_input.send_keys(Keys.RETURN)
+                # Absenden
+                self._submit_login(driver, p_input, timeout=20)
+                logger.info("Login-Anfrage übermittelt. Warte auf Weiterleitung...")
 
-                logger.info("Login-Anfrage übermittelt.")
+            elif page_state == "content":
+                logger.info("Bereits autorisiert, Zielinhalt ist bereits vorhanden.")
+            else:
+                logger.warning("Weder Login noch main.content innerhalb von 60s erkannt. Versuche direkt auf main.content zu warten...")
 
-            except Exception:
-                logger.info("Kein Login-Formular sichtbar, eventuell bereits autorisiert.")
-
-            # Warte auf das Ziel-Element: main.content
-            logger.info("Warte auf main.content...")
-            WebDriverWait(driver, 25).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "main.content"))
+            # 3. Warte geduldig auf das Ziel-Element: main.content
+            logger.info("Warte auf Ziel-Element main.content (bis zu 60s)...")
+            WebDriverWait(driver, 60).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "main.content, main"))
             )
 
-            # Kurze Pause für finale Rendering-Schritte der Angular-Komponenten
-            time.sleep(3)
+            # 4. Warten, bis main.content tatsächlich durch Angular mit Inhalt befüllt wurde
+            logger.info("Warte auf vollständiges Rendern der Komponenten in main.content...")
+            render_end = time.time() + 45
+            content_rendered = False
+            while time.time() < render_end:
+                try:
+                    content_el = driver.find_element(By.CSS_SELECTOR, "main.content, main")
+                    children = content_el.find_elements(By.XPATH, "./*")
+                    text_len = len(content_el.text.strip())
+                    if len(children) > 0 and text_len > 20:
+                        content_rendered = True
+                        break
+                except Exception:
+                    pass
+                time.sleep(1)
 
-            # In-Browser-Konvertierung: Alle Bilder in main.content asynchron zu Base64 umwandeln
+            if not content_rendered:
+                logger.warning("main.content scheint noch wenig Inhalt zu haben, fahre mit Puffer fort.")
+
+            # Zusätzlicher Puffer für finale Rendering-Schritte & asynchrone Widgets
+            time.sleep(5)
+
+            # 5. In-Browser-Konvertierung: Alle Bilder in main.content asynchron zu Base64 umwandeln
             logger.info("Konvertiere Bilder direkt im Browser zu Base64...")
             convert_js = """
             const callback = arguments[arguments.length - 1];
             (async () => {
-                const images = Array.from(document.querySelectorAll('main.content img'));
+                const images = Array.from(document.querySelectorAll('main.content img, main img'));
                 let success = 0;
                 for (const img of images) {
                     try {
@@ -252,11 +404,14 @@ class ToogetherScraper:
                 callback({ total: images.length, converted: success });
             })();
             """
-            driver.set_script_timeout(20)
-            res = driver.execute_async_script(convert_js)
-            logger.info(f"Bildkonvertierung abgeschlossen: {res}")
+            try:
+                driver.set_script_timeout(60)
+                res = driver.execute_async_script(convert_js)
+                logger.info(f"Bildkonvertierung abgeschlossen: {res}")
+            except Exception as e:
+                logger.warning(f"Bildkonvertierung mit Warnung beendet: {e}")
 
-            # HTML parsen und zusammenbauen
+            # 6. HTML parsen und zusammenbauen
             soup = BeautifulSoup(driver.page_source, "lxml")
 
             base_tag = soup.new_tag("base", href="https://to.gether.one/")
@@ -265,9 +420,11 @@ class ToogetherScraper:
 
             head_tag = soup.find("head")
             target_div = soup.find("main", class_="content")
+            if not target_div:
+                target_div = soup.find("main")
 
             if not target_div:
-                raise ValueError("div mit Klasse 'content' konnte nach Login nicht gefunden werden.")
+                raise ValueError("div mit Klasse 'content' oder Tag 'main' konnte nach Login nicht gefunden werden.")
 
             # Zusätzliches Styling für reibungslose Einbettung & sauberes Scrollen
             custom_style = """
