@@ -262,8 +262,9 @@ class ToogetherScraper:
             pass
 
     def _submit_login(self, driver, p_input, timeout=20):
-        """Klickt den Login-Button (auch im Shadow DOM) oder sendet Enter."""
-        button_selector = "cat-button[name='login'], cat-button[data-test='button-submit'], button[type='submit'], cat-button"
+        """Klickt den direkten Haiilo-Login-Button ('Anmelden') oder sendet Enter."""
+        # Wichtig: Spezifisch den direkten Haiilo-Login-Button im Formular wählen (niemals den darüberliegenden SSO-Button 'united ID')
+        button_selector = "form cat-button[name='login'], form cat-button[data-test='button-submit'], cat-button[name='login'], cat-button[data-test='button-submit'], form button[type='submit']"
         end_time = time.time() + timeout
         clicked = False
 
@@ -271,6 +272,11 @@ class ToogetherScraper:
             try:
                 buttons = driver.find_elements(By.CSS_SELECTOR, button_selector)
                 for btn in buttons:
+                    # Sicherheits-Check: 'united ID' Provider-Button explizit ignorieren
+                    btn_text = (btn.text or "").lower()
+                    if "united" in btn_text:
+                        continue
+
                     target = btn
                     try:
                         sr = btn.shadow_root
