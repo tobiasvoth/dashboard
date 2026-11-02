@@ -92,8 +92,7 @@
 		<div id="iframe">
 			<p class = "überschrift">to:gether</p>
 			<div id = "iframe1">
-				<img src="http://127.0.0.1:5500/static/images/load.gif" class="loader" id="loader" alt="Lädt...">
-				<iframe id ="together" src= "http://127.0.0.1:5500/"></iframe>
+				<iframe id ="together" src="/"></iframe>
 			</div>
 		</div>
 
@@ -147,52 +146,98 @@
 
 
 
+	let scrollAnimationId = null;
+	let scrollTimeoutId = null;
+	let scrollPosition = 0;
+	let direction = 1;
+	const scrollStep = 0.25; // Langsames, lesefreundliches Tempo
+
 	function autoScrollIframe() {
-    const iframe = document.getElementById('together');
-    const iframeDocument = iframe.contentWindow.document;
+		if (scrollAnimationId) cancelAnimationFrame(scrollAnimationId);
+		if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
 
-    let scrollPosition = 0; // Anfangs-Scroll-Position
-    let direction = 1; // 1 bedeutet nach unten scrollen, -1 nach oben scrollen
-    const scrollStep = 0.5; // Geschwindigkeit des Scrollens (in Pixeln)
-    const maxScrollPosition = iframeDocument.body.scrollHeight - iframe.clientHeight; // Maximale Scrollhöhe
+		const iframe = document.getElementById('together');
+		if (!iframe) return;
 
-    // Funktion, die das Scrollen ausführt
-    function scroll() {
-        // Scrollen nach unten oder oben
-        scrollPosition += scrollStep * direction;
+		function step() {
+			try {
+				if (!iframe.contentWindow || !iframe.contentWindow.document) {
+					scrollAnimationId = requestAnimationFrame(step);
+					return;
+				}
+				const doc = iframe.contentWindow.document;
+				const body = doc.body;
+				const html = doc.documentElement;
+				const scrollHeight = Math.max(
+					body ? body.scrollHeight : 0,
+					html ? html.scrollHeight : 0
+				);
+				const clientHeight = iframe.clientHeight || (html ? html.clientHeight : 0);
+				const maxScroll = scrollHeight - clientHeight;
 
-        // Wenn das Ende des Inhalts erreicht ist, in die entgegengesetzte Richtung scrollen
-        if (scrollPosition >= maxScrollPosition || scrollPosition <= 0) {
-            direction *= -1; // Richtung ändern
-            // Optional: eine kleine Pause, um den Scroll-Effekt flüssiger zu machen
-            setTimeout(scroll, 1000 * 10); // Warte 1 Sekunde, bevor die Richtung geändert wird
-            return; // Verlasse die aktuelle Iteration und warte auf die nächste
-        }
+				if (maxScroll <= 10) {
+					// Seite rendert noch, kurz warten
+					scrollTimeoutId = setTimeout(() => {
+						scrollAnimationId = requestAnimationFrame(step);
+					}, 500);
+					return;
+				}
 
-        // Scrollen
-        iframe.contentWindow.scrollTo(0, scrollPosition);
+				scrollPosition += scrollStep * direction;
 
-        // Warten auf die nächste Animation
-        requestAnimationFrame(scroll);
-    }
+				// Am unteren Ende angekommen
+				if (scrollPosition >= maxScroll) {
+					scrollPosition = maxScroll;
+					direction = -1;
+					// 8 Sekunden am Ende verweilen
+					scrollTimeoutId = setTimeout(() => {
+						scrollAnimationId = requestAnimationFrame(step);
+					}, 8000);
+					return;
+				}
 
-    // Starte den Scroll-Prozess
-    requestAnimationFrame(scroll);
-}
- const iframe = document.getElementById("together");
- const loader = document.getElementById("loader");
+				// Am oberen Ende angekommen
+				if (scrollPosition <= 0) {
+					scrollPosition = 0;
+					direction = 1;
+					// 4 Sekunden oben verweilen
+					scrollTimeoutId = setTimeout(() => {
+						scrollAnimationId = requestAnimationFrame(step);
+					}, 4000);
+					return;
+				}
 
+				// Zuverlässiges Scrollen auf allen Browsern
+				iframe.contentWindow.scrollTo(0, scrollPosition);
+				if (html) html.scrollTop = scrollPosition;
+				if (body) body.scrollTop = scrollPosition;
 
+				scrollAnimationId = requestAnimationFrame(step);
+			} catch (e) {
+				console.error("autoScrollIframe error:", e);
+				scrollTimeoutId = setTimeout(() => {
+					scrollAnimationId = requestAnimationFrame(step);
+				}, 1000);
+			}
+		}
 
-iframe.onload = function(){
-	loader.style.display = "none";
-	iframe.style.display = "block";
+		// Initial kurz warten, bis Styles und Iframe bereit sind
+		scrollTimeoutId = setTimeout(() => {
+			scrollAnimationId = requestAnimationFrame(step);
+		}, 800);
+	}
 
+	const iframe = document.getElementById("together");
+	if (iframe) {
+		iframe.addEventListener("load", () => {
+			scrollPosition = 0;
+			direction = 1;
+			autoScrollIframe();
+		});
+	}
 
-
-
-    autoScrollIframe();
-};
+	// Direkt starten
+	autoScrollIframe();
 
 
 
@@ -200,7 +245,7 @@ iframe.onload = function(){
 
 async function fetchWeather() {
            
-            const url = "http://127.0.0.1:5500/weather";
+            const url = "/weather";
 
             try {
                 const response = await fetch(url);
@@ -215,7 +260,7 @@ async function fetchWeather() {
                 console.log(temp);
                 const icon = data["Osnabrueck"][1];
 		console.log(icon);
-                const iconUrl = `http://127.0.0.1:5500/static/images/${icon}.png`;
+                const iconUrl = `/static/images/${icon}.png`;
 
                 // Daten in das Div einfügen
                 document.querySelector(".temp_Osnabrueck").textContent = temp + "°C";
@@ -231,7 +276,7 @@ async function fetchWeather() {
                 console.log(temp_FL);
                 const icon_FL = data["Flensburg"][1];
 		console.log(icon_FL);
-                const iconUrl_FL = `http://127.0.0.1:5500/static/images/${icon_FL}.png`;
+                const iconUrl_FL = `/static/images/${icon_FL}.png`;
 
                 // Daten in das Div einfügen
                 document.querySelector(".temp_Flensburg").textContent = temp_FL + "°C";
@@ -244,7 +289,7 @@ async function fetchWeather() {
                 console.log(temp_NB);
                 const icon_NB = data["Neubrandenburg"][1];
 		console.log(icon_NB);
-                const iconUrl_NB = `http://127.0.0.1:5500/static/images/${icon_NB}.png`;
+                const iconUrl_NB = `/static/images/${icon_NB}.png`;
 
                 // Daten in das Div einfügen
                 document.querySelector(".temp_Neubrandenburg").textContent = temp_NB + "°C";
@@ -259,7 +304,7 @@ async function fetchWeather() {
                 console.log(temp_HH);
                 const icon_HH = data["Hamburg"][1];
 		console.log(icon_HH);
-                const iconUrl_HH = `http://127.0.0.1:5500/static/images/${icon_HH}.png`;
+                const iconUrl_HH = `/static/images/${icon_HH}.png`;
 
                 // Daten in das Div einfügen
                 document.querySelector(".temp_Hamburg").textContent = temp_HH + "°C";
@@ -267,7 +312,7 @@ async function fetchWeather() {
 
 
             } catch (error) {
-                document.getElementsById("temp_Osnabrueck").innerHTML = "Fehler beim Laden der Daten";
+                const el = document.querySelector(".temp_Osnabrueck"); if(el) el.innerHTML = "Fehler beim Laden der Daten";
                 console.error("Fehler:", error);
             }
         }

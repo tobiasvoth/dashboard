@@ -19,7 +19,7 @@
 
 #head{
 	display: flex;
-	align-items: strech;
+	align-items: stretch;
 	flex-wrap: wrap;
 	width: 100vw;
 	
@@ -237,6 +237,7 @@ height: 100%;
 	justify-content: center;
 	align-items: center; /* Falls Inhalt vertikal mittig sein soll */
 	position: relative;
+	display: block;
 }
 
 
@@ -261,7 +262,8 @@ height: 100%;
 #together{
 	
 	
-	position: relativ;
+	position: relative;
+	display: block;
 	top:0;
 	left: 0;
 	width: 100%;
